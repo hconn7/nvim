@@ -20,15 +20,7 @@
 =====================================================================
 =====================================================================
 
-vim.keymap.set('n', '<F5>', function()
-  if vim.bo.filetype == 'cpp' then
-    vim.cmd 'w'
-    vim.cmd 'split | terminal g++ -g % -o out && ./out'
-  else
-    require('dap').continue()
-  end
-end, { desc = 'Compile & Run C++ or Debug' })
-  TODO: The very first thing you should do is to run the command `:Tutor` in Neovim.
+ TODO: The very first thing you should do is to run the command `:Tutor` in Neovim.
 
     If you don't know what this means, type the following:
       - <escape key>
@@ -69,6 +61,15 @@ I hope you enjoy your Neovim journey,
 P.S. You can delete this when you're done too. It's your config now! :)
 --]]
 -- Press F5 to save, compile, and run the current C++ file instantly
+vim.keymap.set('n', '<F6>', function()
+  if vim.bo.filetype == 'cpp' then
+    vim.cmd 'w'
+    vim.cmd 'split | terminal g++ -std=c++20 -g % -o out && ./out'
+  else
+    require('dap').continue()
+  end
+end, { desc = 'Compile & Run C++ or Debug' })
+
 vim.keymap.set('n', '<leader>pv', ':Explore<CR>', { desc = 'Open current file directory' })
 -- Set <space> as the leader key
 -- See `:help mapleader`
@@ -121,7 +122,29 @@ vim.opt.mouse = 'a'
 
 -- Don't show the mode, since it's already in the status line
 vim.opt.showmode = false
+-- Enable Tree-sitter powered code folding
+-- Enable Tree-sitter powered code folding
+vim.opt.foldmethod = 'expr'
+vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+vim.opt.fillchars:append { fold = ' ' }
 
+vim.api.nvim_create_autocmd({ 'ColorScheme', 'VimEnter' }, {
+  pattern = '*',
+  callback = function()
+    vim.api.nvim_set_hl(0, 'Folded', { fg = '#888888', bg = 'NONE', italic = true })
+  end,
+})
+-- Prevent everything from being collapsed by default when you open a file
+vim.api.nvim_create_autocmd({ 'FileType' }, {
+  pattern = { 'cpp', 'c', 'lua', 'python', 'javascript', 'typescript', 'rust' },
+  callback = function()
+    -- Fold strictly based on code indentation levels
+    vim.opt_local.foldmethod = 'indent'
+    vim.opt_local.foldlevel = 99
+    vim.cmd 'normal! zx'
+  end,
+})
+-- Prevent everything from being collapsed by default when you open a file
 -- Sync clipboard between OS and Neovim.
 --  Schedule the setting after `UiEnter` because it can increase startup-time.
 --  Remove this option if you want your OS clipboard to remain independent.
@@ -255,14 +278,19 @@ require('lazy').setup {
   'neovim/nvim-lspconfig',
   'L3MON4D3/LuaSnip',
   'fatih/vim-go',
+
+  {
+    'windwp/nvim-autopairs',
+    event = 'InsertEnter',
+    config = true, -- This automatically calls require("nvim-autopairs").setup()
+  },
   -- NOTE: Plugins can also be added by using a table,
   --
 
   {
-
     -- with the first argument being the link and the following
 
-    -- Alternatively, use `config = function() ... end` for full control over the configuration.
+    -- Alternatively, use `config = function( pvjj) ... end` for full control over the configuration.
     -- If you prefer to call `setup` explicitly, use:
     --    {
     --        'lewis6991/gitsigns.nvim',
@@ -675,9 +703,16 @@ require('lazy').setup {
         --  - settings (table): Override the default settings passed when initializing the server.
         --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
         local servers = {
-          clangd = {},
+          clangd = {
+            cmd = {
+              'clangd',
+              '--extra-arg=-std=c++20',
+              '--extra-arg=Wsign-conversion',
+              '--fallback-style={ColumnLimit: 0, AlignAfterOpenBracket: DontAlign}',
+            },
+          },
 
-          -- gopls = {},
+          gopls = {},
           -- pyright = {},
           -- gopls = {},
           -- pyright = {},
@@ -736,6 +771,7 @@ require('lazy').setup {
         vim.list_extend(ensure_installed, {
           'stylua',
           'clangd',
+          'gopls',
 
           -- Used to format Lua code
         })
@@ -794,12 +830,16 @@ require('lazy').setup {
           lua = { 'stylua' },
           c = { 'clang-format' },
           cpp = { 'clang-format' },
-
-          -- Conform can also run multiple formatters sequentially
-          -- python = { "isort", "black" },
-          --
-          -- You can use 'stop_after_first' to run the first available formatter from the list
-          -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        },
+        formatters = {
+          ['clang-format'] = {
+            prepend_args = { '--style={BasedOnStyle: LLVM, ColumnLimit: 0, DerivePointerAlignment: false, PointerAlignment: Left}' },
+            -- Conform can also run multiple formatters sequentially
+            -- python = { "isort", "black" },
+            --
+            -- You can use 'stop_after_first' to run the first available formatter from the list
+            -- javascript = { "prettierd", "prettier", stop_after_first = true },
+          },
         },
       },
     },
@@ -1033,9 +1073,11 @@ require('lazy').setup {
   --  Here are some example plugins that I've included in the Kickstart repository.
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
-  require 'kickstart.plugins.debug',
+  --
+  require 'kickstart.plugins.dap',
   require 'kickstart.plugins.indent_line',
   require 'kickstart.plugins.harpoon',
+  require 'kickstart.plugins.cmake-tools',
   -- require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
