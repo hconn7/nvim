@@ -131,7 +131,10 @@ vim.opt.fillchars:append { fold = ' ' }
 vim.api.nvim_create_autocmd({ 'ColorScheme', 'VimEnter' }, {
   pattern = '*',
   callback = function()
-    vim.api.nvim_set_hl(0, 'Folded', { fg = '#888888', bg = 'NONE', italic = true })
+    vim.api.nvim_set_hl(0, 'Cursor', {})
+    vim.api.nvim_set_hl(0, 'lCursor', {})
+    vim.api.nvim_set_hl(0, 'CursorIM', {})
+    vim.api.nvim_set_hl(0, 'Folded', { fg = '#888888', bg = 'none', italic = true })
   end,
 })
 -- Prevent everything from being collapsed by default when you open a file
@@ -152,7 +155,21 @@ vim.api.nvim_create_autocmd({ 'FileType' }, {
 vim.schedule(function()
   vim.opt.clipboard = 'unnamedplus'
 end)
+-- **** WINDOW CONFIG **** --
+-- Resize left/right splits easily with Alt + h / Alt + l
+vim.keymap.set('n', '<M-h>', '<cmd>vertical resize -5<CR>', { desc = 'Shrink split width' })
+vim.keymap.set('n', '<M-l>', '<cmd>vertical resize +5<CR>', { desc = 'Increase split width' })
+vim.keymap.set('n', '<M-j>', '<cmd>resize -5<CR>', { desc = 'Shrink split height' })
+vim.keymap.set('n', '<M-k>', '<cmd>resize +5<CR>', { desc = 'Increase split height' })
 
+-- Fast window navigation with Ctrl + h/j/k/l
+vim.keymap.set('n', '<C-h>', '<C-w>h', { desc = 'Move to left window' })
+vim.keymap.set('n', '<C-j>', '<C-w>l', { desc = 'Move to right window' })
+vim.keymap.set('n', '<C-l>', '<C-w>j', { desc = 'Move to lower window' })
+vim.keymap.set('n', '<C-k>', '<C-w>k', { desc = 'Move to upper window' }) -- Quick split & close
+vim.keymap.set('n', '<leader>v', '<C-w>v', { desc = 'Vertical split' })
+vim.keymap.set('n', '<leader>s', '<C-w>s', { desc = 'Horizontal split' })
+vim.keymap.set('n', '<leader>q', '<C-w>c', { desc = 'Close current window' })
 -- Enable break indent
 vim.opt.breakindent = true
 
@@ -233,10 +250,7 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 --  See `:help lua-guide-autocommands`
 vim.api.nvim_create_autocmd('ColorScheme', {
   pattern = '*',
-  callback = function()
-    vim.api.nvim_set_hl(0, 'Normal', { bg = 'none' })
-    vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'none' })
-  end,
+  callback = function() end,
 })
 -- Highlight when yanking (copying) text
 --  Try it with `yap` in normal mode
@@ -965,22 +979,46 @@ require('lazy').setup {
     { -- You can easily change to a different colorscheme.
       -- Change the name of the colorscheme plugin below, and then
       -- change the command in the config to whatever the name of that colorscheme is.
-      --
+      -- You can easily change to a different colorscheme.
+      -- Change the name of the colorscheme plugin below, and then
+      -- change the command in the config to whatever the name of that colorscheme is.
       -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-      'folke/tokyonight.nvim',
-      priority = 1000, -- Make sure to load this before all the other start plugins.
+      -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
+      'rebelot/kanagawa.nvim',
+      priority = 1000,
       config = function()
-        ---@diagnostic disable-next-line: missing-fields
-        require('tokyonight').setup {
-          styles = {
-            comments = { italic = false }, -- Disable italics in comments
+        require('kanagawa').setup {
+          theme = 'dragon',
+          background = {
+            dark = 'dragon',
+            light = 'locus',
           },
+          colors = {
+            theme = {
+              dragon = {
+                ui = {
+                  bg_gutter = '#222020',
+                },
+              },
+            },
+          },
+          overrides = function(colors)
+            return {
+              Identifier = { fg = colors.palette.springBlue },
+              ['@lsp.type.property'] = { fg = colors.palette.springBlue },
+            }
+          end,
         }
-
-        -- Load the colorscheme here.
-        -- Like many other themes, this one has different styles, and you could load
-        -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-        vim.cmd.colorscheme 'tokyonight-night'
+        vim.cmd 'colorscheme kanagawa'
+        local ghostty_cyan = '#73FFF9'
+        -- Option 1: Keep the normal variable color, just add an underline (Recommended)
+        vim.api.nvim_set_hl(0, '@lsp.mod.functionScope.cpp', { fg = '#8BA4B0' })
+        -- Option 2: Give mutable-reference variables a warm amber color + underline
+        vim.api.nvim_set_hl(0, '@lsp.typemod.variable.usedAsMutableReference.cpp', { fg = '#6B948C', underline = false })
+        vim.api.nvim_set_hl(0, '@lsp.type.class.cpp', { fg = '#D18B7E' })
+        vim.api.nvim_set_hl(0, 'TelescopePromptBorder', { fg = ghostty_cyan, bg = 'none' })
+        vim.api.nvim_set_hl(0, 'TelescopeResultsBorder', { fg = ghostty_cyan, bg = 'none' })
+        vim.api.nvim_set_hl(0, 'TelescopePreviewBorder', { fg = ghostty_cyan, bg = 'none' })
       end,
     },
 
